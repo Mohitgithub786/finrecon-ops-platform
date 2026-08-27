@@ -1,0 +1,16 @@
+{
+  "generated_at": "2026-08-27T14:36:07.670085",
+  "period": "2024-07-01 to 2024-07-31",
+  "bank_rows": 2214,
+  "ledger_rows": 2160,
+  "clean_transactions": 1800,
+  "injected_errors": {
+    "amount_mismatch": 126,
+    "date_mismatch": 72,
+    "missing_bank": 90,
+    "missing_ledger": 72,
+    "duplicates": 36,
+    "large_transaction": 36,
+    "missing_reference": 36
+  }
+}

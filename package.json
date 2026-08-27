@@ -1,0 +1,13 @@
+{
+  "name": "finrecon-root",
+  "version": "1.0.0",
+  "description": "Finance Transaction Reconciliation & Operations Platform",
+  "scripts": {
+    "start": "npx concurrently \"npm run start --prefix backend\" \"npm run dev --prefix frontend\"",
+    "backend": "npm run start --prefix backend",
+    "frontend": "npm run dev --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

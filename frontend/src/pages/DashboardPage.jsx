@@ -27,22 +27,26 @@ export default function DashboardPage({ currentSession }) {
 
   useEffect(() => {
     if (!data) {
-      // Try to fetch latest session from API
+      // Try to fetch latest session from API, or auto-run demo
       axios.get('/api/reconcile/sessions')
         .then(res => {
           if (res.data && res.data.length > 0) {
             const latestSessionId = res.data[0].sessionId;
             return axios.get(`/api/reconcile/session/${latestSessionId}`);
+          } else {
+            // Auto-trigger benchmark demo if database has no session yet
+            return axios.post('/api/reconcile/run-demo');
           }
         })
         .then(res => {
           if (res && res.data) {
+            const sessionObj = res.data.session || res.data;
             setData({
-              reconciliation_summary: res.data.session.summary,
-              exception_breakdown: res.data.session.exceptionBreakdown,
-              controls_summary: res.data.session.controlsSummary,
-              charts: res.data.session.charts,
-              session_id: res.data.session.sessionId
+              reconciliation_summary: sessionObj.summary || res.data.summary,
+              exception_breakdown: sessionObj.exceptionBreakdown || res.data.exceptionBreakdown,
+              controls_summary: sessionObj.controlsSummary || res.data.controlsSummary,
+              charts: sessionObj.charts || res.data.charts,
+              session_id: sessionObj.sessionId || res.data.sessionId
             });
           }
         })
@@ -76,7 +80,7 @@ export default function DashboardPage({ currentSession }) {
     );
   }
 
-  if (!data || !data.reconciliation_summary) {
+  if (!data || (!data.reconciliation_summary && !data.summary)) {
     return (
       <div className="text-center py-16 bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-xl mx-auto my-12">
         <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center mx-auto mb-4">
@@ -108,9 +112,33 @@ export default function DashboardPage({ currentSession }) {
     );
   }
 
-  const s = data.reconciliation_summary;
-  const c = data.controls_summary || {};
+  const rawS = data.reconciliation_summary || data.summary || {};
+  const rawC = data.controls_summary || data.controlsSummary || {};
   const charts = data.charts || {};
+  const sessionId = data.session_id || data.sessionId || 'N/A';
+  const exceptionBreakdown = data.exception_breakdown || data.exceptionBreakdown || [];
+
+  const s = {
+    total_transactions: rawS.total_transactions ?? rawS.totalTransactions ?? 0,
+    matched_transactions: rawS.matched_transactions ?? rawS.matchedTransactions ?? 0,
+    unmatched_transactions: rawS.unmatched_transactions ?? rawS.unmatchedTransactions ?? 0,
+    exception_count: rawS.exception_count ?? rawS.exceptionCount ?? 0,
+    match_rate_pct: rawS.match_rate_pct ?? rawS.matchRatePct ?? 0,
+    total_discrepancy_usd: rawS.total_discrepancy_usd ?? rawS.totalDiscrepancyUsd ?? 0,
+    bank_total_usd: rawS.bank_total_usd ?? rawS.bankTotalUsd ?? 0,
+    ledger_total_usd: rawS.ledger_total_usd ?? rawS.ledgerTotalUsd ?? 0,
+    net_difference_usd: rawS.net_difference_usd ?? rawS.netDifferenceUsd ?? 0,
+  };
+
+  const c = {
+    large_transactions: rawC.large_transactions ?? rawC.largeTransactions ?? 0,
+    duplicate_invoices: rawC.duplicate_invoices ?? rawC.duplicateInvoices ?? 0,
+    missing_references: rawC.missing_references ?? rawC.missingReferences ?? 0,
+    approval_required: rawC.approval_required ?? rawC.approvalRequired ?? 0,
+    negative_amounts: rawC.negative_amounts ?? rawC.negativeAmounts ?? 0,
+    round_amount_anomalies: rawC.round_amount_anomalies ?? rawC.roundAmountAnomalies ?? 0,
+    total_flagged: rawC.total_flagged ?? rawC.totalFlagged ?? 0,
+  };
 
   return (
     <div className="space-y-8 py-4">
@@ -123,7 +151,7 @@ export default function DashboardPage({ currentSession }) {
           </span>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Finance Operations Dashboard</h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1 font-mono">
-            Session ID: {data.session_id}
+            Session ID: {sessionId}
           </p>
         </div>
 
@@ -185,7 +213,7 @@ export default function DashboardPage({ currentSession }) {
           
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={charts.trend_by_day || []}>
+              <BarChart data={charts.trend_by_day || charts.trendByDay || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
                 <XAxis dataKey="date" stroke="#94a3b8" tick={{ fontSize: 11 }} />
                 <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} />
@@ -211,7 +239,7 @@ export default function DashboardPage({ currentSession }) {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={charts.status_distribution || []}
+                  data={charts.status_distribution || charts.statusDistribution || []}
                   dataKey="count"
                   nameKey="status"
                   cx="50%"
@@ -220,7 +248,7 @@ export default function DashboardPage({ currentSession }) {
                   outerRadius={80}
                   paddingAngle={4}
                 >
-                  {(charts.status_distribution || []).map((entry, index) => (
+                  {(charts.status_distribution || charts.statusDistribution || []).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.status] || '#64748b'} />
                   ))}
                 </Pie>
@@ -233,7 +261,7 @@ export default function DashboardPage({ currentSession }) {
 
           {/* Status Legend List */}
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800 text-xs">
-            {(data.exception_breakdown || []).map((item) => (
+            {exceptionBreakdown.map((item) => (
               <div key={item.status} className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: STATUS_COLORS[item.status] }}></span>
                 <span className="text-slate-300 font-medium truncate">{item.status}: <strong className="text-white">{item.count}</strong></span>

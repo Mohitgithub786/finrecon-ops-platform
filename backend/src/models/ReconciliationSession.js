@@ -34,12 +34,7 @@ const ReconciliationSessionSchema = new mongoose.Schema({
     totalFlagged: { type: Number, default: 0 }
   },
 
-  charts: {
-    trendByDay: Array,
-    amountByCategory: Array,
-    amountByDept: Array,
-    statusDistribution: Array
-  },
+  charts: { type: Object, default: {} },
 
   loadSummary: Object
 }, { timestamps: true });

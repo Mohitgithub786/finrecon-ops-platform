@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const reconcileRoutes = require('./routes/reconcile');
@@ -33,11 +34,22 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Serve frontend static build if dist directory exists
+const frontendDist = path.resolve(__dirname, '../../frontend/dist');
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+}
+
 const ReconciliationSession = require('./models/ReconciliationSession');
 const Exception = require('./models/Exception');
 const { runReconciliationEngine } = require('./services/pythonRunner');
 const { v4: uuidv4 } = require('uuid');
-const fs = require('fs');
 
 // MongoDB Connection
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/finrecon';

@@ -59,7 +59,7 @@ def _rule_duplicate_invoice(df: pd.DataFrame) -> pd.DataFrame:
     df["control_alert_duplicate"] = df.apply(
         lambda r: (
             f"DUPLICATE INVOICE: Invoice {r['invoice_id']} appears "
-            f"{invoice_counts.get(r['invoice_id'], 1)} time(s). "
+            f"{invoice_counts.get(r['invoice_id'], 1)} time(s) total across Bank & Ledger datasets. "
             f"Verify this is not a double-entry."
         ) if r["is_duplicate_invoice"] and r["invoice_id"] else "", axis=1
     )

@@ -222,10 +222,14 @@ export default function ExceptionsPage() {
               </div>
 
               {/* Control Alerts if any */}
-              {selectedException.hasControlFlag && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-start gap-2">
-                  <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
-                  <span>{selectedException.controlAlerts}</span>
+              {selectedException.hasControlFlag && selectedException.controlAlerts && (
+                <div className="space-y-2">
+                  {selectedException.controlAlerts.split(' | ').map((alertText, idx) => (
+                    <div key={idx} className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-start gap-2">
+                      <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
+                      <span>{alertText}</span>
+                    </div>
+                  ))}
                 </div>
               )}
 
